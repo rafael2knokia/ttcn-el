@@ -1,4 +1,4 @@
-;;; ttcn.el --- a major mode for editing TTCN.MP files
+;;; ttcn.el --- a major mode for editing TTCN.MP files  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 1997, 2000 W. Martin Borgert <debacle@debian.org>
 
@@ -36,8 +36,8 @@
     ()
   (setq ttcn-mode-syntax-table (make-syntax-table))
   (modify-syntax-entry ?$  "w"  ttcn-mode-syntax-table)
-  (modify-syntax-entry ?(  "()" ttcn-mode-syntax-table)
-  (modify-syntax-entry ?)  ")(" ttcn-mode-syntax-table)
+  (modify-syntax-entry ?\( "()" ttcn-mode-syntax-table)
+  (modify-syntax-entry ?\) ")(" ttcn-mode-syntax-table)
   (modify-syntax-entry ?*  ". 23"  ttcn-mode-syntax-table)
   (modify-syntax-entry ?+  "."  ttcn-mode-syntax-table)
   (modify-syntax-entry ?-  ". 1234b"  ttcn-mode-syntax-table)
@@ -46,12 +46,12 @@
   (modify-syntax-entry ?<  "(>"  ttcn-mode-syntax-table)
   (modify-syntax-entry ?=  "."  ttcn-mode-syntax-table)
   (modify-syntax-entry ?>  ")<"  ttcn-mode-syntax-table)
-  (modify-syntax-entry ?[  "(]" ttcn-mode-syntax-table)
+  (modify-syntax-entry ?\[ "(]" ttcn-mode-syntax-table)
   (modify-syntax-entry ?\' "\""  ttcn-mode-syntax-table)
   (modify-syntax-entry ?\^m "> b" ttcn-mode-syntax-table)
   (modify-syntax-entry ?\_ "w"  ttcn-mode-syntax-table)
   (modify-syntax-entry ?\n "> b" ttcn-mode-syntax-table)
-  (modify-syntax-entry ?]  ")[" ttcn-mode-syntax-table)
+  (modify-syntax-entry ?\] ")[" ttcn-mode-syntax-table)
   (modify-syntax-entry ?{  "(}" ttcn-mode-syntax-table)
   (modify-syntax-entry ?}  "){" ttcn-mode-syntax-table)
    )
@@ -294,7 +294,7 @@ If optional argument arg is negative, decrease it."
 	  "TeletexString" "TRUE" "TYPE-IDENTIFIER" "UNION" "UNIQUE"
 	  "UNIVERSAL" "UniversalString" "UTCTime" "VideotexString"
 	  "VisibleString" "WITH") t) "\\>")
-      '(1 font-lock-reference-face)))))
+      '(1 font-lock-constant-face)))))
 
 ;;;###autoload
 (defun ttcn-mode ()
@@ -330,6 +330,8 @@ Not much, but highlighting."
 	imenu-case-fold-search nil)
   (imenu-add-menubar-index)
   (run-hooks 'ttcn-mode-hook))
+
+(provide 'ttcn)
 
 ;;; ttcn.el ends here
 

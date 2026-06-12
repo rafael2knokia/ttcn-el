@@ -981,5 +981,7 @@ The region is sent terminated by a newline."
 ;       (define-key global-map '(shift button3) 'mouse-function-menu)
 ))
 
+(provide 'forth)
+
 ;; end
 

@@ -1,4 +1,4 @@
-;;; ttcn3.el --- a major mode for editing TTCN-3 core language files
+;;; ttcn3.el --- a major mode for editing TTCN-3 core language files  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2000-2005 W. Martin Borgert <debacle@debian.org>
 
@@ -35,7 +35,6 @@
 (eval-and-compile
   (c-add-language 'ttcn-3-mode 'c-mode))
 
-(defconst c-TTCN3-conditional-key "do\\|else\\|for\\|if\\|while")
 (defconst c-TTCN3-comment-start-regexp "/\\([*][*]?\\)")
 (defconst c-TTCN3-defun-prompt-regexp "\\<function\\>")
 (defvar c-ttcn3-menu nil)
@@ -99,35 +98,6 @@
 (defvar ttcn3-font-lock-keywords nil
   "Expressions to highlight in TTCN-3 mode.")
 
-; Different Emacsen - different font-lock-faces!
-
-; GNU Emacs 20.7 has: builtin comment constant function-name keyword
-;   reference string type variable-name warning
-
-; GNU Emacs 21.0 has: builtin comment constant doc function-name
-;   keyword reference string type variable-name warning
-
-; XEmacs 21.1 has: comment doc-string function-name keyword
-;   preprocessor reference string type variable-name
-
-; Therefore, some aliases:
-(if (and (not (boundp 'font-lock-builtin-face))
-	 (boundp 'font-lock-doc-string-face))
-    (defun ttcn3-builtin-face ()
-      "builtin face for XEmacs"
-      font-lock-doc-string-face)
-  (defun ttcn3-builtin-face ()
-    "builtin face for GNU Emacs"
-    font-lock-builtin-face))
-(if (and (not (boundp 'font-lock-constant-face))
-	 (boundp 'font-lock-preprocessor-face))
-    (defun ttcn3-constant-face ()
-      "constant face for XEmacs"
-      font-lock-preprocessor-face)
-  (defun ttcn3-constant-face ()
-    "constant face for GNU Emacs"
-    font-lock-constant-face))
-
 (setq ttcn3-font-lock-keywords
       (eval-when-compile
 	(list
@@ -174,7 +144,7 @@
 	      "ispresent" "lengthof" "oct2bit" "oct2hex" "oct2int"
 	      "oct2str" "regexp" "rnd" "sizeof" "str2int" "str2oct"
 	      "substr" "unichar2int") t) "\\>")
-	  '(1 (ttcn3-builtin-face)))
+	  '(1 font-lock-builtin-face))
 	 ;; TTCN-3 types
 	 (list
 	  (concat
@@ -197,7 +167,7 @@
 		       "[ \t]+\\(\\sw+\\)?[ \t]+\\(\\sw+\\)?")
 	       '(1 font-lock-keyword-face)
 	       '(2 font-lock-type-face)
-	       '(3 (ttcn3-constant-face) nil t))
+	       '(3 font-lock-constant-face nil t))
 	 ;; TTCN-3 templates, and variables
 	 (list (concat "\\<\\(template\\|var\\)\\>[ \t]+"
 		       "\\(\\(record\\|set\\)[ \t]+of[ \t]+\\)?"
@@ -226,11 +196,7 @@
 	      "TYPE-IDENTIFIER" "UNION" "UNIQUE" "UNIVERSAL"
 	      "UniversalString" "UTCTime" "VideotexString"
 	      "VisibleString" "WITH") t) "\\>")
-	  '(1 font-lock-reference-face)))))
-
-;; Handle TTCN-3 alternatives simlilar to switch/case in C
-(make-variable-buffer-local 'c-switch-label-key)
-(defconst c-TTCN3-alternative-key "\\(\\[.*\\]\\)")
+	  '(1 font-lock-constant-face)))))
 
 ;; Support for the TTCN3Parser and ttthreeparser
 (defvar ttcn3-parse-command "TTCN3Parser"
@@ -255,10 +221,11 @@ easily repeat a parse."
 	    "Run the TTCN-3 parser (like this): "
 	    (or ttcn3-parse-default ttcn3-parse-command)
 	    nil nil 'ttcn3-parse-history))))
-  (let* ((buf (compile-internal
-	       (concat command-args " " (buffer-file-name))
-	       "No more errors"
-	       "TTCN-3 parse")))))
+  (require 'compile)
+  (compilation-start
+   (concat command-args " " (shell-quote-argument (buffer-file-name)))
+   nil
+   (lambda (_mode-name) "*TTCN-3 parse*")))
 
 ;;; Online help (taken from IDLWAVE)
 (defun ttcn3-mouse-context-help (ev &optional arg)
@@ -268,14 +235,13 @@ easily repeat a parse."
   (ttcn3-context-help arg))
 
 (define-key ttcn3-mode-map "\M-?" 'ttcn3-context-help)
-(define-key ttcn3-mode-map
-  (if (featurep 'xemacs) [(shift button3)] [(shift mouse-3)])
-  'ttcn3-mouse-context-help)
+(define-key ttcn3-mode-map [(shift mouse-3)] 'ttcn3-mouse-context-help)
 
-(defvar ttcn3-help-bnf-file "file:///usr/share/ttcn-el/ttcn-bnf.html"
-  "URL of TTCN-3 BNF help in HTML format.")
+(defvar ttcn3-help-bnf-file "/usr/share/ttcn-el/ttcn-bnf.html"
+  "File name of the TTCN-3 BNF help in HTML format.
+Used by `ttcn3-context-help' to look up keywords with `eww'.")
 
-(defun ttcn3-context-help (&optional arg)
+(defun ttcn3-context-help (&optional _arg)
   "Display TTCN-3 Online Help on context.
 If point is on a keyword, help for that keyword will be shown."
   (interactive "P")
@@ -431,17 +397,24 @@ If point is on a keyword, help for that keyword will be shown."
 	   ((looking-at "verdicttype") "VerdictTypeKeyword")
 	   ((looking-at "while") "WhileKeyword")
 	   ((looking-at "with") "WithKeyword"))))
-      (message link)
-      (w3m (concat ttcn3-help-bnf-file "#" link)))))
+      (cond
+       ((not link)
+	(message "No TTCN-3 BNF help available for the word at point"))
+       ((not (file-exists-p ttcn3-help-bnf-file))
+	(message "TTCN-3 BNF help file not found: %s" ttcn3-help-bnf-file))
+       (t
+	(eww (concat "file://"
+		     (expand-file-name ttcn3-help-bnf-file)
+		     "#" link)))))))
+
+(declare-function speedbar-add-supported-extension "speedbar" (extension))
 
 ;;;###autoload
 (defun ttcn3-add-extensions (ext)
-  ""
-  ;; support for speedbar (we want to see these files in speedbar)
-  (condition-case nil
-      (progn
-        (require 'speedbar)
-        (funcall (symbol-function 'speedbar-add-supported-extension) ext))))
+  "Register EXT so that TTCN-3 files are shown in the speedbar."
+  (ignore-errors
+    (require 'speedbar)
+    (speedbar-add-supported-extension ext)))
 
 (ttcn3-add-extensions ".ttcn(3)?")
 
@@ -461,18 +434,13 @@ in the info documenation for that mode."
   (c-common-init 'ttcn-3-mode)
   (setq comment-start "/* "
 	comment-end   " */"
- 	c-conditional-key c-TTCN3-conditional-key
  	c-comment-start-regexp c-TTCN3-comment-start-regexp
-	c-method-key nil
-	c-switch-label-key c-TTCN3-alternative-key
- 	c-baseclass-key nil
 	c-recognize-knr-p nil
 	defun-prompt-regexp c-TTCN3-defun-prompt-regexp
 	imenu-generic-expression ttcn3-imenu-generic-expression
 	imenu-case-fold-search nil)
   (c-set-offset 'substatement-open 0)
   (c-set-offset 'statement-cont 0)
-  (easy-menu-add c-ttcn3-menu)
   (set (make-local-variable 'font-lock-defaults)
        '(ttcn3-font-lock-keywords nil nil ((?_ . "w"))))
   (c-run-mode-hooks 'c-mode-common-hook 'ttcn3-mode-hook)

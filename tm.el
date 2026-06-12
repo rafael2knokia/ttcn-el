@@ -1,4 +1,4 @@
-;;; tm.el --- functions for editing Test Manager files using forth-mode
+;;; tm.el --- functions for editing Test Manager files using forth-mode  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 1997, 2000 W. Martin Borgert <debacle@debian.org>
 
@@ -30,8 +30,14 @@
 
 (require 'font-lock)			; uses font-lock,
 (require 'imenu)			; and imenu
-(if (not (functionp 'forth-mode))	; is forth.el loaded?
-    (load-library "forth"))		; similar to gforth.el
+(require 'forth)			; provides forth-mode (gforth.el)
+
+;; User option and forward declarations to keep the byte-compiler happy.
+(defvar tm-grammalogue nil
+  "Optional initials used by `tm-header'; falls back to environment/user name.")
+(defvar tm-export-file-name nil
+  "Target file name used by `tm-export-stripped'.")
+(defvar tm-imenu-generic-expression)
 
 (defconst tm-positives
   (concat forth-positives
@@ -204,7 +210,8 @@ beginning or end of buffer."
   (insert "\n"))
 
 (defvar tm-imenu-generic-expression nil
-  "Imenu generic expression for Test Manager files.  See `imenu-generic-expression'.")
+  "Imenu generic expression for Test Manager files.
+See `imenu-generic-expression'.")
 (setq tm-imenu-generic-expression
       '(("Constants"
 	 "\\<constant\\>[ \t]+\\(\\sw+\\)" 1)
@@ -234,7 +241,7 @@ beginning or end of buffer."
 	(while (< (current-column) col)
 	  (insert ?\ ))
 	(while (> (current-column) col)
-	  (delete-backward-char 1)))))
+	  (delete-char -1)))))
 
 ;;; GNU Emacs Menu
 
@@ -307,7 +314,7 @@ Useful for files > 64kByte to transfer to the good old K1197."
   (beginning-of-line)
   (insert (format "( %s %s : "
 		  (format-time-string "%Y-%m-%d" (current-time))
-		  (or grammalogue
+		  (or tm-grammalogue
 		      (getenv "GRAMMALOGUE")
 		      (substring
 		       (or (user-full-name)
@@ -405,5 +412,7 @@ Default is \"-\"."
     (insert ?\t))
   (insert "( -- )")
   (backward-char 4))
+
+(provide 'tm)
 
 ;;; tm.el ends here
